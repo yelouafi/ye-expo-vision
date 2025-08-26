@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["YeExpoVisionModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.yeexpovision.YeExpoVisionModule"]
+  }
+}

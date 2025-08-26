@@ -1,0 +1,10 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "ye-expo-vision": ["../src/index"],
+      "ye-expo-vision/*": ["../src/*"]
+    }
+  }
+}
