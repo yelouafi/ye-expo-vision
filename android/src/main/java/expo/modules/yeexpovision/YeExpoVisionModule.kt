@@ -14,14 +14,6 @@ class YeExpoVisionModule : Module() {
     // The module will be accessible from `requireNativeModule('YeExpoVision')` in JavaScript.
     Name("YeExpoVision")
 
-    // Sets constant properties on the module. Can take a dictionary or a closure that returns a dictionary.
-    Constants(
-      "PI" to Math.PI
-    )
-
-    // Defines event names that the module can send to JavaScript.
-    Events("onChange")
-
     // Defines a JavaScript synchronous function that runs the native code on the JavaScript thread.
     Function("hello") {
       "Hello world! 👋"
@@ -34,17 +26,6 @@ class YeExpoVisionModule : Module() {
       sendEvent("onChange", mapOf(
         "value" to value
       ))
-    }
-
-    // Enables the module to be used as a native view. Definition components that are accepted as part of
-    // the view definition: Prop, Events.
-    View(YeExpoVisionView::class) {
-      // Defines a setter for the `url` prop.
-      Prop("url") { view: YeExpoVisionView, url: URL ->
-        view.webView.loadUrl(url.toString())
-      }
-      // Defines an event that the view can send to JavaScript.
-      Events("onLoad")
     }
   }
 }

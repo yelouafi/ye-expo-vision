@@ -14,7 +14,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "expo.modules.yeexpovision.example"
+      "bundleIdentifier": "expo.modules.yeexpovision.example",
+      "appleTeamId": "UAZQVX42VU"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,10 +23,23 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "expo.modules.yeexpovision.example"
+      "package": "expo.modules.yeexpovision.example",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone"
+        }
+      ]
+    ]
   }
 }
