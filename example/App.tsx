@@ -1,31 +1,21 @@
 import { useState } from "react";
-import {
-  Button,
-  SafeAreaView,
-  View,
-  Image,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from "react-native";
+import { Button, SafeAreaView, View, Text, StyleSheet } from "react-native";
 import { Camera } from "./Camera";
 
 export default function App() {
   const [showCamera, setShowCamera] = useState(false);
-  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
 
   const handleOpenCamera = () => {
     setShowCamera(true);
-    setCapturedPhoto(null);
   };
 
   const handleCloseCamera = () => {
     setShowCamera(false);
   };
 
-  const handlePhotoTaken = (photoUri: string) => {
-    setCapturedPhoto(photoUri);
-    setShowCamera(false);
+  const handlePhotoTaken = async (photoUri: string) => {
+    // Photo taken - text recognition happens in the camera component
+    console.log("Photo taken:", photoUri);
   };
 
   if (showCamera) {
@@ -36,30 +26,14 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Button title="Open Camera" onPress={handleOpenCamera} />
-      </View>
-
       <View style={styles.content}>
-        {capturedPhoto ? (
-          <View style={styles.photoContainer}>
-            <Text style={styles.photoTitle}>Last Photo Taken:</Text>
-            <Image source={{ uri: capturedPhoto }} style={styles.photo} />
-            <TouchableOpacity
-              style={styles.retakeButton}
-              onPress={handleOpenCamera}
-            >
-              <Text style={styles.retakeButtonText}>Take Another Photo</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No photos taken yet</Text>
-            <Text style={styles.emptySubtext}>
-              Tap "Open Camera" to get started
-            </Text>
-          </View>
-        )}
+        <View style={styles.centerContent}>
+          <Text style={styles.title}>Text Recognition Camera</Text>
+          <Text style={styles.subtitle}>
+            Take a photo to recognize text with iOS Vision API
+          </Text>
+          <Button title="Open Camera" onPress={handleOpenCamera} />
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -70,53 +44,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f5f5",
   },
-  header: {
-    padding: 20,
-    paddingTop: 10,
-  },
   content: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
   },
-  photoContainer: {
+  centerContent: {
     alignItems: "center",
-    width: "100%",
   },
-  photoTitle: {
-    fontSize: 18,
+  title: {
+    fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 15,
     color: "#333",
+    marginBottom: 10,
+    textAlign: "center",
   },
-  photo: {
-    width: 300,
-    height: 400,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  retakeButton: {
-    backgroundColor: "#007AFF",
-    paddingHorizontal: 30,
-    paddingVertical: 12,
-    borderRadius: 25,
-  },
-  retakeButtonText: {
-    color: "white",
+  subtitle: {
     fontSize: 16,
-    fontWeight: "600",
-  },
-  emptyState: {
-    alignItems: "center",
-  },
-  emptyText: {
-    fontSize: 20,
     color: "#666",
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 16,
-    color: "#999",
+    marginBottom: 30,
+    textAlign: "center",
+    lineHeight: 22,
   },
 });
