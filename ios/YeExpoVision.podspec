@@ -19,7 +19,11 @@ Pod::Spec.new do |s|
   s.static_framework = true
 
   s.dependency 'ExpoModulesCore'
-  s.dependency 'GoogleMLKit/TextRecognition', '~> 8.0.0'
+  s.dependency "GoogleMLKit/TextRecognition"
+  s.dependency "GoogleMLKit/TextRecognitionChinese"
+  s.dependency "GoogleMLKit/TextRecognitionDevanagari"
+  s.dependency "GoogleMLKit/TextRecognitionJapanese"
+  s.dependency "GoogleMLKit/TextRecognitionKorean"
 
   # Swift/Objective-C compatibility
   s.pod_target_xcconfig = {

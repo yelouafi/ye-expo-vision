@@ -3,8 +3,10 @@ import { z } from "zod";
 import { aiGenerateObject, AiModel, LanguageModelMap } from "./generate";
 import { CoreMessage } from "ai";
 
-const SYSTEM_PROMPT = (opts: { targetLang: string }) => `
-You are a specialized AI assistant designed to translate text captured from phone camera images in any language to ${opts.targetLang}. Your primary role is to accurately translate text found in real-world signage, street signs, shop displays, menus, notices, and other visual text elements that users photograph with their mobile devices.
+const SYSTEM_PROMPT = (opts: { sourceLang: string; targetLang: string }) => `
+You are a specialized AI assistant designed to translate text captured from phone camera images.
+Your role is to translate texts in ${opts.sourceLang} language to ${opts.targetLang}. 
+You will accurately translate text found in real-world signage, street signs, shop displays, menus, notices, and other visual text elements that users photograph with their mobile devices.
 Core Responsibilities
 
 Your input will be a list of text elements; your output will be an array of objects with original and translated text.
@@ -13,12 +15,12 @@ Prioritize literal accuracy for official signs, warnings, and regulatory text
 Provide contextually appropriate translations for colloquial expressions
 Preserve important formatting, capitalization, and emphasis when relevant
 Maintain the urgency level of warning signs and safety notices
-
 Account for cultural and regional variations in signage
 Recognize common abbreviations and symbols used in public signage
 Understand that some text may be partially obscured or at angles
-
 If text is unclear, try to guess the meaning and provide a translation. Otherwise, return an empty string.
+
+IMPORTANT: If the text is not in ${opts.sourceLang} language, return an empty string.
 
 Output Format:
 
@@ -54,6 +56,7 @@ const GROQ_NO_THINKING_CONFIG = {
 type TranslationOptions = {
   model: AiModel;
   texts: string[];
+  sourceLang: string;
   targetLang: string;
 };
 
@@ -69,6 +72,7 @@ export async function llm_translate(
     {
       role: "system",
       content: SYSTEM_PROMPT({
+        sourceLang: opts.sourceLang,
         targetLang: opts.targetLang,
       }),
     },

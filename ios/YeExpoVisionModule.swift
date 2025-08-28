@@ -2,6 +2,10 @@ import CoreImage
 import ExpoModulesCore
 import ImageIO
 import MLKitTextRecognition
+import MLKitTextRecognitionChinese
+import MLKitTextRecognitionDevanagari
+import MLKitTextRecognitionJapanese
+import MLKitTextRecognitionKorean
 import MLKitVision
 import UIKit
 import Vision
@@ -112,18 +116,19 @@ public class YeExpoVisionModule: Module {
     }
 
     // Text recognition function using iOS Vision API
-    AsyncFunction("recognizeText") { (imageUri: String, languages: [String], promise: Promise) in
-      self.recognizeTextInImage(imageUri: imageUri, languages: languages, promise: promise)
+    AsyncFunction("recognizeTextNative") {
+      (imageUri: String, languages: [String], promise: Promise) in
+      self.recognizeTextNative(imageUri: imageUri, languages: languages, promise: promise)
     }
 
     // Text recognition function using Google ML Kit
-    AsyncFunction("recognizeTextInImageMLKit") {
-      (imageUri: String, languages: [String], promise: Promise) in
-      self.recognizeTextInImageMLKit(imageUri: imageUri, languages: languages, promise: promise)
+    AsyncFunction("recognizeTextMLKit") {
+      (imageUri: String, script: String, promise: Promise) in
+      self.recognizeTextMLKit(imageUri: imageUri, script: script, promise: promise)
     }
   }
 
-  private func recognizeTextInImage(imageUri: String, languages: [String], promise: Promise) {
+  private func recognizeTextNative(imageUri: String, languages: [String], promise: Promise) {
     guard let url = URL(string: imageUri),
       let imageData = try? Data(contentsOf: url),
       let image = UIImage(data: imageData),
@@ -171,9 +176,9 @@ public class YeExpoVisionModule: Module {
     }
 
     request.recognitionLevel = VNRequestTextRecognitionLevel.accurate
-    request.usesLanguageCorrection = true
+    // request.usesLanguageCorrection = true
     request.recognitionLanguages = languages
-    // request.automaticallyDetectsLanguage = true
+    request.automaticallyDetectsLanguage = false
 
     do {
       try requestHandler.perform([request])
@@ -182,7 +187,7 @@ public class YeExpoVisionModule: Module {
     }
   }
 
-  private func recognizeTextInImageMLKit(imageUri: String, languages: [String], promise: Promise) {
+  private func recognizeTextMLKit(imageUri: String, script: String, promise: Promise) {
     guard let url = URL(string: imageUri),
       let imageData = try? Data(contentsOf: url),
       let uiImage = UIImage(data: imageData)
@@ -194,8 +199,7 @@ public class YeExpoVisionModule: Module {
     let visionImage = VisionImage(image: uiImage)
     visionImage.orientation = uiImage.imageOrientation
 
-    let options = TextRecognizerOptions()
-    let textRecognizer = TextRecognizer.textRecognizer(options: options)
+    let textRecognizer = getMLKitTextRecognizer(script: script)
 
     textRecognizer.process(visionImage) { result, error in
       if let error = error {
@@ -216,11 +220,23 @@ public class YeExpoVisionModule: Module {
           let orientation = self.orientationToString(orientation: uiImage.imageOrientation)
           out.append([
             "text": line.text, "confidence": 0, "boundingBox": bb, "orientation": orientation,
+            "languages": line.recognizedLanguages.map { $0.languageCode },
           ])
         }
       }
 
       promise.resolve(out)
+    }
+  }
+
+  private func getMLKitTextRecognizer(script: String) -> TextRecognizer {
+    switch script {
+    case "chinese": return TextRecognizer.textRecognizer(options: ChineseTextRecognizerOptions())
+    case "korean": return TextRecognizer.textRecognizer(options: KoreanTextRecognizerOptions())
+    case "japanese": return TextRecognizer.textRecognizer(options: JapaneseTextRecognizerOptions())
+    case "devanagari":
+      return TextRecognizer.textRecognizer(options: DevanagariTextRecognizerOptions())
+    default: return TextRecognizer.textRecognizer(options: TextRecognizerOptions())
     }
   }
 

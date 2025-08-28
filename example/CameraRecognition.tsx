@@ -10,21 +10,26 @@ import {
   Dimensions,
   Image,
 } from "react-native";
-import YeExpoVisionModule, { RecognizedTextBlock, Rect } from "ye-expo-vision";
-import { visionRectToViewRect } from "ye-expo-vision/YeExpoVisionModule";
+import YeExpoVisionModule, {
+  RecognizedTextBlock,
+  normalizedRectToViewRect,
+} from "ye-expo-vision";
 import { llm_translate } from "./ai/llm-translate";
-import { transformFileSync } from "@babel/core";
+import { recognizeText } from "./recognizeText";
+import { calculateOptimalFontSize, recognizeTextInImage } from "./utils";
 
 interface CameraProps {
   onClose: () => void;
-  onPhotoTaken: (photoUri: string) => void;
-  language?: string;
+  sourceLanguage?: string;
+  targetLanguage?: string;
+  method?: "native" | "mlkit" | "auto";
 }
 
-export function Camera({
+export function CameraRecognition({
   onClose,
-  onPhotoTaken,
-  language = "ar-SA",
+  sourceLanguage = "ja-JP",
+  targetLanguage = "en-US",
+  method = "auto",
 }: CameraProps) {
   const [facing, setFacing] = useState<CameraType>("back");
   const [permission, requestPermission] = useCameraPermissions();
@@ -88,63 +93,38 @@ export function Camera({
   }
 
   async function takePicture() {
-    if (cameraRef.current) {
-      try {
-        setOngoingTask("recognizing");
-        const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.8,
-          base64: false,
-        });
-        if (photo?.uri) {
-          setImageUri(photo.uri);
-          console.log("Photo taken with dimensions:", {
-            width: photo.width,
-            height: photo.height,
-          });
-          setImageDimensions({ width: photo.width, height: photo.height });
+    //
+    if (!cameraRef.current) return;
 
-          // Switch to preview mode
-          setMode("preview");
+    const photo = await cameraRef.current
+      .takePictureAsync({
+        quality: 0.8,
+        base64: false,
+      })
+      .catch((err) => {
+        console.error("Error taking photo:", err);
+        Alert.alert("Error", "Failed to take photo");
+        return null;
+      });
 
-          // Perform text recognition
-          try {
-            console.log("recognizing text");
-            const textBlocks =
-              await YeExpoVisionModule.recognizeTextInImageMLKit(photo.uri, [
-                language,
-              ]);
-            console.log("blocks", textBlocks);
-            setRecognizedText(textBlocks);
+    if (photo?.uri) {
+      setImageUri(photo.uri);
+      console.log("Photo taken with dimensions:", {
+        width: photo.width,
+        height: photo.height,
+      });
+      setImageDimensions({ width: photo.width, height: photo.height });
 
-            // setOngoingTask("translating");
-            // console.log("translating text");
-            // const texts = textBlocks.map((block) => block.text);
-            // const translations = await llm_translate({
-            //   // model: "google/gemini-flash",
-            //   model: "groq/gpt-oss-120b",
-            //   texts,
-            //   targetLang: language,
-            // });
+      setMode("preview");
 
-            // console.log("translations", translations);
-            // updateTranslations(translations);
-            setOngoingTask("none");
-          } catch (error) {
-            console.error("Error recognizing text:", error);
-            Alert.alert(
-              "Text Recognition Error",
-              "Failed to recognize text in image"
-            );
-          }
-
-          onPhotoTaken(photo.uri);
-        }
-      } catch (error) {
-        Alert.alert("Error", "Failed to take picture");
-        console.error("Error taking picture:", error);
-      } finally {
-        setOngoingTask("none");
-      }
+      await recognizeTextInImage(photo.uri, {
+        sourceLanguage,
+        targetLanguage,
+        method,
+        onTask: (task) => setOngoingTask(task),
+        onRecognizedText: (textBlocks) => setRecognizedText(textBlocks),
+        onTranslations: (translations) => updateTranslations(translations),
+      });
     }
   }
 
@@ -184,7 +164,7 @@ export function Camera({
     if (!imageDimensions || !view) return null;
 
     const contentMode = mode === "preview" ? "contain" : "cover"; // CameraView is aspectFill by default
-    return visionRectToViewRect(
+    return normalizedRectToViewRect(
       boundingBox,
       imageDimensions.width,
       imageDimensions.height,
@@ -194,25 +174,9 @@ export function Camera({
     );
   }
 
-  function calculateOptimalFontSize(
-    text: string,
-    boxWidth: number,
-    boxHeight: number
-  ) {
-    // Base font size calculation based on box height
-    const baseSize = Math.max(8, Math.min(boxHeight * 0.6, 24));
-
-    // Adjust for text length - longer text needs smaller font
-    const textLengthFactor = Math.max(0.5, Math.min(1.2, 20 / text.length));
-
-    // Adjust for box width - narrow boxes need smaller font
-    const widthFactor = Math.max(
-      0.6,
-      Math.min(1.5, boxWidth / (text.length * 8))
-    );
-
-    return Math.max(8, Math.min(baseSize * textLengthFactor * widthFactor, 20));
-  }
+  const translatedTextBlocks = recognizedText.filter(
+    (block) => block.translation && block.translation.length > 0
+  );
 
   // Render camera view
   if (mode === "camera") {
@@ -239,7 +203,7 @@ export function Camera({
           </View>
 
           {/* Text Recognition Overlay */}
-          {recognizedText.map((textBlock, index) => {
+          {translatedTextBlocks.map((textBlock, index) => {
             const scaledBox = getScaledBoundingBox(textBlock.boundingBox);
             if (!scaledBox) return null;
 
@@ -327,7 +291,7 @@ export function Camera({
         />
 
         {/* Text Recognition Overlay for Image Preview */}
-        {recognizedText.map((textBlock, index) => {
+        {translatedTextBlocks.map((textBlock, index) => {
           const scaledBox = getScaledBoundingBox(textBlock.boundingBox);
           //console.log("scaledBox", scaledBox);
           if (!scaledBox) return null;

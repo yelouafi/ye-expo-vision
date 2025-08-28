@@ -8,3 +8,10 @@ export interface RecognizedTextBlock {
 }
 
 export type RecognizedText = RecognizedTextBlock[];
+
+export type MLKitScript =
+  | "chinese"
+  | "korean"
+  | "japanese"
+  | "devanagari"
+  | "latin";
