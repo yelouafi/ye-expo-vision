@@ -12,19 +12,28 @@ import {
 } from "react-native";
 import YeExpoVisionModule, { RecognizedTextBlock, Rect } from "ye-expo-vision";
 import { visionRectToViewRect } from "ye-expo-vision/YeExpoVisionModule";
+import { llm_translate } from "./ai/llm-translate";
+import { transformFileSync } from "@babel/core";
 
 interface CameraProps {
   onClose: () => void;
   onPhotoTaken: (photoUri: string) => void;
+  language?: string;
 }
 
-export function Camera({ onClose, onPhotoTaken }: CameraProps) {
+export function Camera({
+  onClose,
+  onPhotoTaken,
+  language = "ar-SA",
+}: CameraProps) {
   const [facing, setFacing] = useState<CameraType>("back");
   const [permission, requestPermission] = useCameraPermissions();
   const [recognizedText, setRecognizedText] = useState<RecognizedTextBlock[]>(
     []
   );
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [ongoingTask, setOngoingTask] = useState<
+    "none" | "recognizing" | "translating"
+  >("none");
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [imageDimensions, setImageDimensions] = useState<{
     width: number;
@@ -41,10 +50,19 @@ export function Camera({ onClose, onPhotoTaken }: CameraProps) {
   const [mode, setMode] = useState<"camera" | "preview">("camera");
   const cameraRef = useRef<CameraView>(null);
 
-  //   useEffect(() => {
-  //     const languages = YeExpoVisionModule.getSupportedLanguages();
-  //     console.log("languages", languages);
-  //   }, []);
+  function updateTranslations(translations: string[]) {
+    setRecognizedText((textBlocks) =>
+      textBlocks.map((block, index) => ({
+        ...block,
+        translation: translations[index] || "",
+      }))
+    );
+  }
+
+  useEffect(() => {
+    const languages = YeExpoVisionModule.getSupportedLanguages();
+    console.log("languages", languages);
+  }, []);
 
   const screenDimensions = Dimensions.get("window");
 
@@ -72,7 +90,7 @@ export function Camera({ onClose, onPhotoTaken }: CameraProps) {
   async function takePicture() {
     if (cameraRef.current) {
       try {
-        setIsProcessing(true);
+        setOngoingTask("recognizing");
         const photo = await cameraRef.current.takePictureAsync({
           quality: 0.8,
           base64: false,
@@ -90,10 +108,27 @@ export function Camera({ onClose, onPhotoTaken }: CameraProps) {
 
           // Perform text recognition
           try {
+            console.log("recognizing text");
             const textBlocks =
-              await YeExpoVisionModule.recognizeTextInImageMLKit(photo.uri);
+              await YeExpoVisionModule.recognizeTextInImageMLKit(photo.uri, [
+                language,
+              ]);
             console.log("blocks", textBlocks);
             setRecognizedText(textBlocks);
+
+            // setOngoingTask("translating");
+            // console.log("translating text");
+            // const texts = textBlocks.map((block) => block.text);
+            // const translations = await llm_translate({
+            //   // model: "google/gemini-flash",
+            //   model: "groq/gpt-oss-120b",
+            //   texts,
+            //   targetLang: language,
+            // });
+
+            // console.log("translations", translations);
+            // updateTranslations(translations);
+            setOngoingTask("none");
           } catch (error) {
             console.error("Error recognizing text:", error);
             Alert.alert(
@@ -108,7 +143,7 @@ export function Camera({ onClose, onPhotoTaken }: CameraProps) {
         Alert.alert("Error", "Failed to take picture");
         console.error("Error taking picture:", error);
       } finally {
-        setIsProcessing(false);
+        setOngoingTask("none");
       }
     }
   }
@@ -234,16 +269,21 @@ export function Camera({ onClose, onPhotoTaken }: CameraProps) {
                   adjustsFontSizeToFit={true}
                   minimumFontScale={0.5}
                 >
-                  {textBlock.text}
+                  {textBlock.translation || textBlock.text}
                 </Text>
               </View>
             );
           })}
 
           {/* Processing Indicator */}
-          {isProcessing && (
+          {ongoingTask === "recognizing" && (
             <View style={styles.processingOverlay}>
               <Text style={styles.processingText}>Recognizing text...</Text>
+            </View>
+          )}
+          {ongoingTask === "translating" && (
+            <View style={styles.processingOverlay}>
+              <Text style={styles.processingText}>Translating text...</Text>
             </View>
           )}
 
@@ -258,10 +298,12 @@ export function Camera({ onClose, onPhotoTaken }: CameraProps) {
             <TouchableOpacity
               style={[
                 styles.captureButton,
-                isProcessing && styles.captureButtonDisabled,
+                ongoingTask === "recognizing" && styles.captureButtonDisabled,
               ]}
               onPress={takePicture}
-              disabled={isProcessing}
+              disabled={
+                ongoingTask === "recognizing" || ongoingTask === "translating"
+              }
             >
               <View style={styles.captureButtonInner} />
             </TouchableOpacity>
@@ -287,7 +329,7 @@ export function Camera({ onClose, onPhotoTaken }: CameraProps) {
         {/* Text Recognition Overlay for Image Preview */}
         {recognizedText.map((textBlock, index) => {
           const scaledBox = getScaledBoundingBox(textBlock.boundingBox);
-          console.log("scaledBox", scaledBox);
+          //console.log("scaledBox", scaledBox);
           if (!scaledBox) return null;
 
           const optimalFontSize = calculateOptimalFontSize(
@@ -316,16 +358,21 @@ export function Camera({ onClose, onPhotoTaken }: CameraProps) {
                 adjustsFontSizeToFit={true}
                 minimumFontScale={0.5}
               >
-                {textBlock.text}
+                {textBlock.translation || textBlock.text}
               </Text>
             </View>
           );
         })}
 
         {/* Processing Indicator */}
-        {isProcessing && (
+        {ongoingTask === "recognizing" && (
           <View style={styles.processingOverlay}>
             <Text style={styles.processingText}>Recognizing text...</Text>
+          </View>
+        )}
+        {ongoingTask === "translating" && (
+          <View style={styles.processingOverlay}>
+            <Text style={styles.processingText}>Translating text...</Text>
           </View>
         )}
 

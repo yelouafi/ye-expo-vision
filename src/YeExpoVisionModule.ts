@@ -2,8 +2,11 @@ import { NativeModule, requireNativeModule } from "expo";
 import { RecognizedText, Rect } from "./YeExpoVision.types";
 
 declare class YeExpoVisionModule extends NativeModule {
-  recognizeText(imageUri: string): Promise<RecognizedText>;
-  recognizeTextInImageMLKit(imageUri: string): Promise<RecognizedText>;
+  recognizeText(imageUri: string, languages: string[]): Promise<RecognizedText>;
+  recognizeTextInImageMLKit(
+    imageUri: string,
+    languages: string[]
+  ): Promise<RecognizedText>;
   getSupportedLanguages(): string[];
 }
 

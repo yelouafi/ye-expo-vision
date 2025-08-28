@@ -2,6 +2,7 @@ export type Rect = { x: number; y: number; width: number; height: number }; // n
 
 export interface RecognizedTextBlock {
   text: string;
+  translation?: string;
   confidence: number;
   boundingBox: Rect;
 }
