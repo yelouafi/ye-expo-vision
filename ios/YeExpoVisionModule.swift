@@ -116,9 +116,9 @@ public class YeExpoVisionModule: Module {
     }
 
     // Text recognition function using iOS Vision API
-    AsyncFunction("recognizeTextNative") {
-      (imageUri: String, languages: [String], promise: Promise) in
-      self.recognizeTextNative(imageUri: imageUri, languages: languages, promise: promise)
+    AsyncFunction("recognizeTextIOS") {
+      (imageUri: String, options: [String: Any], promise: Promise) in
+      self.recognizeTextIOS(imageUri: imageUri, options: options, promise: promise)
     }
 
     // Text recognition function using Google ML Kit
@@ -128,7 +128,7 @@ public class YeExpoVisionModule: Module {
     }
   }
 
-  private func recognizeTextNative(imageUri: String, languages: [String], promise: Promise) {
+  private func recognizeTextIOS(imageUri: String, options: [String: Any], promise: Promise) {
     guard let url = URL(string: imageUri),
       let imageData = try? Data(contentsOf: url),
       let image = UIImage(data: imageData),
@@ -137,6 +137,11 @@ public class YeExpoVisionModule: Module {
       promise.reject("INVALID_IMAGE", "Could not load image from URI")
       return
     }
+
+    let recognitionLevel = options["recognitionLevel"] as? String ?? "accurate"
+    let recognitionLanguages = options["recognitionLanguages"] as? [String] ?? []
+    let automaticallyDetectsLanguage = options["automaticallyDetectsLanguage"] as? Bool ?? false
+    let usesLanguageCorrection = options["usesLanguageCorrection"] as? Bool ?? true
 
     // english language
     let orientation = CGImagePropertyOrientation(image.imageOrientation)
@@ -175,10 +180,12 @@ public class YeExpoVisionModule: Module {
       promise.resolve(textBlocks)
     }
 
-    request.recognitionLevel = VNRequestTextRecognitionLevel.accurate
-    // request.usesLanguageCorrection = true
-    request.recognitionLanguages = languages
-    request.automaticallyDetectsLanguage = false
+    request.recognitionLevel = recognitionLevel == "fast" ? .fast : .accurate
+    request.usesLanguageCorrection = usesLanguageCorrection
+    if !recognitionLanguages.isEmpty {
+      request.recognitionLanguages = recognitionLanguages
+    }
+    request.automaticallyDetectsLanguage = automaticallyDetectsLanguage
 
     do {
       try requestHandler.perform([request])

@@ -2,9 +2,14 @@ import { NativeModule, requireNativeModule } from "expo";
 import { MLKitScript, RecognizedText } from "./YeExpoVision.types";
 
 declare class YeExpoVisionModule extends NativeModule {
-  recognizeTextNative(
+  recognizeTextIOS(
     imageUri: string,
-    languages: string[]
+    options: {
+      recognitionLevel?: "fast" | "accurate";
+      recognitionLanguages?: string[];
+      automaticallyDetectsLanguage?: boolean;
+      usesLanguageCorrection?: boolean;
+    }
   ): Promise<RecognizedText>;
   recognizeTextMLKit(
     imageUri: string,
