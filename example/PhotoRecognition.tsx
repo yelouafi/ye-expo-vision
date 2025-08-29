@@ -10,9 +10,7 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { normalizedRectToViewRect, RecognizedTextBlock } from "ye-expo-vision";
-import { llm_translate } from "./ai/llm-translate";
-import { recognizeText } from "./recognizeText";
-import { calculateOptimalFontSize, recognizeTextInImage } from "./utils";
+import { recognizeTextInImage } from "./utils";
 
 interface PhotoRecognitionProps {
   onClose: () => void;
@@ -252,11 +250,13 @@ export function PhotoRecognition({
                 const scaledBox = getScaledBoundingBox(textBlock.boundingBox);
                 if (!scaledBox) return null;
 
-                const optimalFontSize = calculateOptimalFontSize(
-                  textBlock.text,
-                  scaledBox.width,
-                  scaledBox.height
-                );
+                const text = textBlock.translation || textBlock.text;
+
+                // const optimalFontSize = calculateOptimalFontSize(
+                //   text,
+                //   scaledBox.width,
+                //   scaledBox.height
+                // );
 
                 return (
                   <View
@@ -264,24 +264,44 @@ export function PhotoRecognition({
                     style={[
                       styles.textOverlay,
                       {
-                        transform: [
-                          { translateX: scaledBox.left },
-                          { translateY: scaledBox.top },
-                        ],
+                        position: "absolute",
+                        left: scaledBox.left,
+                        top: scaledBox.top,
                         width: scaledBox.width,
                         height: scaledBox.height,
+                        backgroundColor: "rgba(0, 0, 0, 0.7)",
+                        paddingHorizontal: 2,
+                        paddingVertical: 1,
                       },
                     ]}
                   >
+                    {/* <FitText
+                      text={text}
+                      targetW={scaledBox.width}
+                      targetH={scaledBox.height}
+                      min={8}
+                      max={28}
+                      onFinalSize={(size) => {
+                        console.log("Final size:", text, size);
+                      }}
+                    /> */}
                     <Text
-                      style={[
-                        styles.overlayText,
-                        { fontSize: optimalFontSize },
-                      ]}
-                      adjustsFontSizeToFit={true}
-                      minimumFontScale={0.5}
+                      style={{
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        width: scaledBox.width,
+                        height: scaledBox.height,
+                        fontSize: 72,
+                        color: "#00FF00",
+                        textAlign: "center",
+                        verticalAlign: "middle",
+                      }}
+                      adjustsFontSizeToFit
+                      numberOfLines={2}
+                      // minimumFontScale={0.01}
                     >
-                      {textBlock.translation || textBlock.text}
+                      {text}
                     </Text>
                   </View>
                 );
@@ -434,13 +454,11 @@ const styles = StyleSheet.create({
   },
   textOverlay: {
     position: "absolute",
-    top: 0,
-    left: 0,
     borderWidth: 0,
     backgroundColor: "rgba(0, 255, 0, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 0,
+    // justifyContent: "center",
+    // alignItems: "center",
+    // padding: 0,
     margin: 0,
   },
   overlayText: {

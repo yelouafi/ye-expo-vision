@@ -211,12 +211,15 @@ const methods = [
 
 type Method = "native" | "mlkit" | "auto";
 
+type DropdownItem = { code: string; name: string };
+
 // Custom Dropdown Component
 interface DropdownProps {
   label: string;
   selectedValue: string;
   onValueChange: (value: string) => void;
-  options: { code: string; name: string }[];
+  options: DropdownItem[];
+  renderItem?: (item: DropdownItem, isSelected: boolean) => string;
 }
 
 function Dropdown({
@@ -224,6 +227,7 @@ function Dropdown({
   selectedValue,
   onValueChange,
   options,
+  renderItem = (item, isSelected) => item.name,
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -277,7 +281,7 @@ function Dropdown({
                         styles.dropdownItemTextSelected,
                     ]}
                   >
-                    {item.name}
+                    {renderItem(item, item.code === selectedValue)}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -351,6 +355,9 @@ export default function App() {
               selectedValue={targetLanguage}
               onValueChange={setTargetLanguage}
               options={languages}
+              renderItem={(item, isSelected) =>
+                `${item.name} ${sourceLanguage === item.code ? "(Transcribe only)" : ""}`
+              }
             />
           </View>
 

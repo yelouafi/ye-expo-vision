@@ -29,19 +29,23 @@ export async function recognizeTextInImage(
     console.log("Recognized text blocks:", textBlocks);
     opts.onRecognizedText(textBlocks);
 
-    opts.onTask("translating");
-    console.log("translating text");
-    const texts = textBlocks.map((block) => block.text);
-    const translations = await llm_translate({
-      // model: "google/gemini-flash",
-      model: "groq/gpt-oss-120b",
-      texts,
-      sourceLang: opts.sourceLanguage,
-      targetLang: opts.targetLanguage,
-    });
+    if (opts.targetLanguage && opts.targetLanguage !== opts.sourceLanguage) {
+      opts.onTask("translating");
+      console.log("translating text");
+      const texts = textBlocks.map((block) => block.text);
+      const translations = await llm_translate({
+        model: "google/gemini-flash-lite",
+        // model: "groq/gpt-oss-120b",
+        texts,
+        sourceLang: opts.sourceLanguage,
+        targetLang: opts.targetLanguage,
+      });
 
-    console.log("translations", translations);
-    opts.onTranslations(translations);
+      console.log("translations", translations);
+      opts.onTranslations(translations);
+    } else {
+      opts.onTranslations(textBlocks.map((block) => block.text));
+    }
   } catch (error) {
     console.error(error);
   } finally {

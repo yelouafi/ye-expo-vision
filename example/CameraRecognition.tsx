@@ -207,8 +207,10 @@ export function CameraRecognition({
             const scaledBox = getScaledBoundingBox(textBlock.boundingBox);
             if (!scaledBox) return null;
 
+            const text = textBlock.translation || textBlock.text;
+
             const optimalFontSize = calculateOptimalFontSize(
-              textBlock.text,
+              text,
               scaledBox.width,
               scaledBox.height
             );
@@ -229,11 +231,11 @@ export function CameraRecognition({
                 ]}
               >
                 <Text
-                  style={[styles.overlayText, { fontSize: optimalFontSize }]}
+                  style={[styles.overlayText]}
                   adjustsFontSizeToFit={true}
-                  minimumFontScale={0.5}
+                  // minimumFontScale={0.5}
                 >
-                  {textBlock.translation || textBlock.text}
+                  {text}
                 </Text>
               </View>
             );
