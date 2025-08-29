@@ -15,7 +15,8 @@
     "open:ios": "xed example/ios",
     "open:android": "open -a \"Android Studio\" example/android",
     "android": "expo run:android",
-    "ios": "expo run:ios"
+    "ios": "expo run:ios",
+    "publish:patch": "npm run prepare && npm version patch && npm publish && git push --follow-tags"
   },
   "keywords": [
     "react-native",
