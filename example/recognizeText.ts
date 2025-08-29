@@ -38,7 +38,9 @@ export function recognizeText(
       throw new Error(`Unsupported language: ${language}`);
     }
     console.log("recognizing text with native method", language, iosLanguage);
-    return YeExpoVisionModule.recognizeTextNative(imageUri, [iosLanguage]);
+    return YeExpoVisionModule.recognizeTextIOS(imageUri, {
+      recognitionLanguages: [iosLanguage],
+    });
   }
   if (method === "mlkit") {
     console.log("recognizing text with mlkit method");
